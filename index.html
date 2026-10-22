@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Phonon Studio — text to speech in your browser</title>
+<meta name="description" content="Turn text into speech with 37 voices. Runs entirely in your browser — no server, no account, no upload.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎙️</text></svg>">
+<style>
+  :root{
+    --bg:#0d0f13; --panel:#151920; --panel2:#1c2029; --line:#272e3a;
+    --ink:#e9edf3; --dim:#98a2b1; --accent:#6ea8fe; --accent2:#7ee0c0; --warn:#ffb86b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:radial-gradient(1200px 600px at 50% -10%, #1a2233 0%, var(--bg) 55%) no-repeat, var(--bg);
+    color:var(--ink); min-height:100vh;
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:26px 18px 90px}
+  header{margin-bottom:22px}
+  h1{font-size:24px;margin:0 0 6px;letter-spacing:-.2px;font-weight:680}
+  h1 span{color:var(--accent)}
+  .lede{color:var(--dim);font-size:13.5px}
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+  @media(max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+  .tag{display:inline-block;font-size:10.5px;letter-spacing:.9px;text-transform:uppercase;
+       color:var(--accent);background:rgba(110,168,254,.12);border-radius:6px;padding:3px 8px;margin-bottom:12px}
+  label{display:block;font-size:11.5px;letter-spacing:.7px;text-transform:uppercase;
+        color:var(--dim);margin:16px 0 7px;font-weight:600}
+  label:first-of-type{margin-top:0}
+  textarea{width:100%;min-height:200px;background:var(--panel2);color:var(--ink);
+           border:1px solid var(--line);border-radius:12px;padding:13px;font:inherit;resize:vertical;
+           line-height:1.6}
+  textarea:focus,select:focus,input:focus{outline:none;border-color:var(--accent)}
+  select,input[type=text]{width:100%;background:var(--panel2);color:var(--ink);
+          border:1px solid var(--line);border-radius:11px;padding:11px;font:inherit}
+  input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0}
+  .row{display:flex;gap:10px}
+  .row>*{flex:1;min-width:0}
+  button{font:inherit;font-weight:640;border:0;border-radius:12px;padding:13px 18px;cursor:pointer;
+         background:var(--accent);color:#08101c;transition:filter .15s,opacity .15s}
+  button:hover:not(:disabled){filter:brightness(1.08)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .hint{color:var(--dim);font-size:12px;margin-top:7px;line-height:1.5}
+  .vdesc{color:var(--dim);font-size:12.5px;margin-top:8px;min-height:38px;line-height:1.5}
+  .val{color:var(--accent2);font-variant-numeric:tabular-nums}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}
+  .chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;
+        padding:6px 12px;font-size:12.5px;color:var(--dim);cursor:pointer;user-select:none}
+  .chip:hover{border-color:var(--accent);color:var(--ink)}
+  .status{font-size:13px;color:var(--dim);margin-top:12px;min-height:20px}
+  .status.err{color:#ff8f8f}
+  .bar{height:5px;border-radius:99px;background:var(--panel2);overflow:hidden;margin-top:10px;display:none}
+  .bar>i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+  audio{width:100%;margin-top:14px;display:none}
+  .actions{display:flex;gap:10px;margin-top:14px}
+  .actions>*{flex:1}
+  .meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--dim)}
+  .foot{margin-top:22px;color:var(--dim);font-size:12.5px;line-height:1.7}
+  .foot b{color:var(--ink);font-weight:600}
+  .badge{display:inline-block;border:1px solid var(--line);border-radius:7px;padding:2px 8px;
+         font-size:11.5px;color:var(--dim);margin-right:6px}
+  dialog{border:1px solid var(--line);background:var(--panel);color:var(--ink);
+         border-radius:16px;padding:0;max-width:460px;width:92%}
+  dialog::backdrop{background:rgba(0,0,0,.6)}
+  .dlg-h{padding:18px 20px 0}
+  .dlg-b{padding:8px 20px 20px}
+  .dlg-b p{color:var(--dim);font-size:13.5px;margin:8px 0 16px}
+  kbd{background:var(--panel2);border:1px solid var(--line);border-radius:5px;
+      padding:1px 6px;font-size:12px;font-family:ui-monospace,monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Phonon <span>Studio</span></h1>
+    <div class="lede">Text to speech with 37 voices · runs entirely in your browser · nothing is uploaded</div>
+  </header>
+
+  <div class="grid">
+    <!-- ── left: the script ── -->
+    <section class="card">
+      <span class="tag">Script</span>
+      <label for="text">What should it say?</label>
+      <textarea id="text" spellcheck="true" placeholder="Type or paste your script.
+
+Punctuation does real work here. Commas give it a beat, full stops let it land. An ellipsis… makes it wait. A line break starts a new thought."></textarea>
+      <div class="chips">
+        <span class="chip" data-sample="intro">Short intro</span>
+        <span class="chip" data-sample="advert">Advert read</span>
+        <span class="chip" data-sample="narration">Narration</span>
+        <span class="chip" data-sample="explainer">Explainer</span>
+        <span class="chip" data-sample="clear">Clear</span>
+      </div>
+      <div class="hint"><span id="count">0</span> characters · <span id="est">~0s</span> of speech</div>
+    </section>
+
+    <!-- ── right: voice + delivery ── -->
+    <section class="card">
+      <span class="tag">Voice</span>
+      <label for="voice">Speaker</label>
+      <select id="voice"></select>
+      <div class="vdesc" id="vdesc">Loading the voice catalogue…</div>
+
+      <label for="temp">Delivery <span class="val" id="tempv">0.30</span></label>
+      <input type="range" id="temp" min="0.05" max="0.95" step="0.05" value="0.30">
+      <div class="hint">Low: even, controlled. High: livelier — and more variation between takes.</div>
+
+      <label for="speed">Pacing</label>
+      <select id="speed">
+        <option value="1">Normal</option>
+        <option value="0.9">Brisk</option>
+        <option value="1.12">Measured</option>
+      </select>
+
+      <label for="seed">Take</label>
+      <input type="text" id="seed" inputmode="numeric" value="4242424242424242">
+      <div class="hint">Same words, same seed → identical audio. Change it for another performance.</div>
+
+      <div class="actions">
+        <button id="go" disabled>Generate</button>
+      </div>
+      <div class="bar" id="bar"><i></i></div>
+      <div class="status" id="status">Loading the model…</div>
+
+      <audio id="player" controls></audio>
+      <div class="actions" id="post" style="display:none">
+        <button class="ghost" id="dl">Download WAV</button>
+        <button class="ghost" id="again">Another take</button>
+      </div>
+      <div class="meta" id="meta"></div>
+    </section>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <span class="tag">How the voice works</span>
+    <div class="foot">
+      There is no <b>emotion dial</b> on this model — so there is no fake one in this UI.
+      Tone comes from three real things: <b>which speaker</b> you pick (each has a described
+      character), <b>delivery</b> (how much variation the model introduces), and <b>the writing
+      itself</b> — punctuation, sentence length and rhythm outweigh any slider.
+      <br><br>
+      <span class="badge">Phonon-31m</span>
+      <span class="badge">Apache 2.0</span>
+      <span class="badge">WebAssembly</span>
+      <span class="badge">No server</span>
+      Your text never leaves the device. The model downloads once, then it works offline.
+    </div>
+  </div>
+</div>
+
+<dialog id="firstRun">
+  <div class="dlg-h"><h1 style="font-size:19px;margin:0 0 4px">One-time download</h1></div>
+  <div class="dlg-b">
+    <p>The speech model is about <b>65 MB</b>. It downloads once and is then cached by your
+       browser, so later visits start instantly and work without a connection.</p>
+    <button id="dlgOk" style="width:100%">Download and continue</button>
+  </div>
+</dialog>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
